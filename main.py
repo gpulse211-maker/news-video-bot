@@ -56,8 +56,23 @@ def create_video(title, image_paths):
 
     print("Creating video...")
 
-    # Simple slideshow (no TextClip = no error)
-    video = ImageSequenceClip(image_paths, fps=1)
+    clips = []
+
+    for path in image_paths:
+        try:
+            clip = ImageClip(path).resize((1280, 720)).set_duration(3)
+            clips.append(clip)
+        except:
+            pass
+
+    if not clips:
+        print("No valid clips.")
+        return
+
+    # Convert clips to image frames
+    frames = [clip.get_frame(0) for clip in clips]
+
+    video = ImageSequenceClip(frames, fps=1)
 
     os.makedirs("output", exist_ok=True)
     video.write_videofile("output/news_video.mp4", fps=24)
