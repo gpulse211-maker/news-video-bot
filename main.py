@@ -1,9 +1,9 @@
 import requests
 import feedparser
 from bs4 import BeautifulSoup
-from moviepy.editor import *
-from urllib.parse import urljoin
-import os
+from moviepy.video.io.ImageSequenceClip import ImageSequenceClip
+from moviepy.video.VideoClip import ImageClip
+from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 
 RSS_URL = "https://feeds.bbci.co.uk/news/rss.xml"
 
