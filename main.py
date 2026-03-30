@@ -2,36 +2,44 @@ import os
 import requests
 import feedparser
 from bs4 import BeautifulSoup
+from urllib.parse import urljoin
+
 from moviepy.video.io.ImageSequenceClip import ImageSequenceClip
 from moviepy.video.VideoClip import ImageClip
-from moviepy.video.compositing.CompositeVideoClip import CompositeVideoClip
 
+# ---------------- CONFIG ----------------
 RSS_URL = "https://feeds.bbci.co.uk/news/rss.xml"
 
+# ---------------- GET NEWS ----------------
 def get_news():
     feed = feedparser.parse(RSS_URL)
     return [{"title": e.title, "link": e.link} for e in feed.entries[:1]]
 
+# ---------------- GET IMAGES ----------------
 def get_images(url):
-    res = requests.get(url)
+    headers = {"User-Agent": "Mozilla/5.0"}
+    res = requests.get(url, headers=headers)
     soup = BeautifulSoup(res.text, "html.parser")
 
     imgs = []
     for img in soup.find_all("img"):
         src = img.get("src")
-        if src and src.startswith("http"):
-            imgs.append(src)
+        if src:
+            full = urljoin(url, src)
+            if full.startswith("http"):
+                imgs.append(full)
 
-    return imgs[:3]
+    return imgs[:5]
 
-def download(imgs):
-    paths = []
+# ---------------- DOWNLOAD IMAGES ----------------
+def download(images):
     os.makedirs("images", exist_ok=True)
+    paths = []
 
-    for i, url in enumerate(imgs):
+    for i, url in enumerate(images):
         try:
             data = requests.get(url).content
-            path = f"images/{i}.jpg"
+            path = f"images/img_{i}.jpg"
             with open(path, "wb") as f:
                 f.write(data)
             paths.append(path)
@@ -40,26 +48,31 @@ def download(imgs):
 
     return paths
 
-def create_video(title, images):
-    clips = []
+# ---------------- CREATE VIDEO ----------------
+def create_video(title, image_paths):
+    if not image_paths:
+        print("No images to create video.")
+        return
 
-    for img in images:
-        clip = ImageClip(img).set_duration(3)
-        txt = TextClip(title, fontsize=40, color="white").set_duration(3)
-        clips.append(CompositeVideoClip([clip, txt.set_position("bottom")]))
+    print("Creating video...")
 
-    video = concatenate_videoclips(clips)
-    video.write_videofile("output.mp4", fps=24)
+    # Simple slideshow (no TextClip = no error)
+    video = ImageSequenceClip(image_paths, fps=1)
 
+    os.makedirs("output", exist_ok=True)
+    video.write_videofile("output/news_video.mp4", fps=24)
+
+# ---------------- MAIN ----------------
 def main():
     news = get_news()
 
     for n in news:
-        imgs = get_images(n["link"])
-        paths = download(imgs)
+        print("Processing:", n["title"])
 
-        if paths:
-            create_video(n["title"], paths)
+        images = get_images(n["link"])
+        paths = download(images)
+
+        create_video(n["title"], paths)
 
 if __name__ == "__main__":
     main()
