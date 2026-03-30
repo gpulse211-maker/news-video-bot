@@ -29,7 +29,7 @@ def get_images(url):
             if full.startswith("http"):
                 imgs.append(full)
 
-    return imgs[:5]
+    return imgs[:10]
 
 # ---------------- DOWNLOAD IMAGES ----------------
 def download(images):
@@ -38,11 +38,15 @@ def download(images):
 
     for i, url in enumerate(images):
         try:
-            data = requests.get(url).content
+            data = requests.get(url, timeout=10).content
             path = f"images/img_{i}.jpg"
+
             with open(path, "wb") as f:
                 f.write(data)
-            paths.append(path)
+
+            # check if image is valid
+            if os.path.getsize(path) > 5000:  # ignore tiny/broken files
+                paths.append(path)
         except:
             pass
 
@@ -51,26 +55,26 @@ def download(images):
 # ---------------- CREATE VIDEO ----------------
 def create_video(title, image_paths):
     if not image_paths:
-        print("No images to create video.")
+        print("No images found at all.")
         return
 
     print("Creating video...")
 
-    clips = []
+    valid_clips = []
 
     for path in image_paths:
         try:
             clip = ImageClip(path).resize((1280, 720)).set_duration(3)
-            clips.append(clip)
+            valid_clips.append(clip)
         except:
-            pass
+            print("Skipped bad image:", path)
 
-    if not clips:
+    if len(valid_clips) == 0:
         print("No valid clips.")
         return
 
-    # Convert clips to image frames
-    frames = [clip.get_frame(0) for clip in clips]
+    # convert to frames
+    frames = [clip.get_frame(0) for clip in valid_clips]
 
     video = ImageSequenceClip(frames, fps=1)
 
