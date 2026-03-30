@@ -2,7 +2,6 @@ import os
 import requests
 import feedparser
 
-from moviepy.video.io.ImageSequenceClip import ImageSequenceClip
 from moviepy.video.VideoClip import ImageClip
 from moviepy.video.fx.resize import resize
 
@@ -70,7 +69,6 @@ def main():
         print("Processing:", n["title"])
 
         img_path = download_image(n["image"])
-
         create_video(n["title"], img_path)
 
 if __name__ == "__main__":
