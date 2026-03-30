@@ -4,6 +4,7 @@ import feedparser
 
 from moviepy.video.io.ImageSequenceClip import ImageSequenceClip
 from moviepy.video.VideoClip import ImageClip
+from moviepy.video.fx.resize import resize
 
 # ---------------- CONFIG ----------------
 RSS_URL = "https://feeds.bbci.co.uk/news/rss.xml"
@@ -16,7 +17,6 @@ def get_news():
     for entry in feed.entries[:1]:
         image_url = None
 
-        # BBC RSS image
         if "media_content" in entry:
             image_url = entry.media_content[0]["url"]
         elif "media_thumbnail" in entry:
@@ -55,7 +55,8 @@ def create_video(title, image_path):
 
     print("Creating video...")
 
-    clip = ImageClip(image_path).resize((1280, 720)).set_duration(5)
+    clip = ImageClip(image_path)
+    clip = clip.fx(resize, (1280, 720)).set_duration(5)
 
     os.makedirs("output", exist_ok=True)
 
