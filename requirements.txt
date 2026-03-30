@@ -1,7 +1,7 @@
 moviepy==1.0.3
-numpy==1.23.5
-imageio==2.31.1
-imageio-ffmpeg
 requests
 beautifulsoup4
 feedparser
+imageio
+imageio-ffmpeg
+numpy
