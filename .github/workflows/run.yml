@@ -2,7 +2,7 @@ name: Run News Bot
 
 on:
   schedule:
-    - cron: "0 * * * *"   # every hour
+    - cron: "0 * * * *"
   workflow_dispatch:
 
 jobs:
@@ -13,11 +13,19 @@ jobs:
     - name: Checkout
       uses: actions/checkout@v3
 
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: "3.10"
+
     - name: Install FFmpeg
       run: sudo apt-get update && sudo apt-get install -y ffmpeg
 
-    - name: Install Python deps
-      run: pip install -r requirements.txt
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install moviepy
+        pip install requests beautifulsoup4 feedparser
 
     - name: Run script
       run: python main.py
