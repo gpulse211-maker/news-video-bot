@@ -29,3 +29,9 @@ jobs:
 
     - name: Run script
       run: python main.py
+
+    - name: Upload video artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: news-video
+        path: output/news_video.mp4
