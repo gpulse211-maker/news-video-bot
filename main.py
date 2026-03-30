@@ -1,8 +1,6 @@
 import os
 import requests
 import feedparser
-from bs4 import BeautifulSoup
-from urllib.parse import urljoin
 
 from moviepy.video.io.ImageSequenceClip import ImageSequenceClip
 from moviepy.video.VideoClip import ImageClip
@@ -13,73 +11,55 @@ RSS_URL = "https://feeds.bbci.co.uk/news/rss.xml"
 # ---------------- GET NEWS ----------------
 def get_news():
     feed = feedparser.parse(RSS_URL)
-    return [{"title": e.title, "link": e.link} for e in feed.entries[:1]]
+    articles = []
 
-# ---------------- GET IMAGES ----------------
-def get_images(url):
-    headers = {"User-Agent": "Mozilla/5.0"}
-    res = requests.get(url, headers=headers)
-    soup = BeautifulSoup(res.text, "html.parser")
+    for entry in feed.entries[:1]:
+        image_url = None
 
-    imgs = []
-    for img in soup.find_all("img"):
-        src = img.get("src")
-        if src:
-            full = urljoin(url, src)
-            if full.startswith("http"):
-                imgs.append(full)
+        # BBC RSS image
+        if "media_content" in entry:
+            image_url = entry.media_content[0]["url"]
+        elif "media_thumbnail" in entry:
+            image_url = entry.media_thumbnail[0]["url"]
 
-    return imgs[:10]
+        articles.append({
+            "title": entry.title,
+            "image": image_url
+        })
 
-# ---------------- DOWNLOAD IMAGES ----------------
-def download(images):
+    return articles
+
+# ---------------- DOWNLOAD IMAGE ----------------
+def download_image(url):
     os.makedirs("images", exist_ok=True)
-    paths = []
 
-    for i, url in enumerate(images):
-        try:
-            data = requests.get(url, timeout=10).content
-            path = f"images/img_{i}.jpg"
+    try:
+        data = requests.get(url, timeout=10).content
+        path = "images/news.jpg"
 
-            with open(path, "wb") as f:
-                f.write(data)
+        with open(path, "wb") as f:
+            f.write(data)
 
-            # check if image is valid
-            if os.path.getsize(path) > 5000:  # ignore tiny/broken files
-                paths.append(path)
-        except:
-            pass
+        if os.path.getsize(path) > 5000:
+            return path
+    except:
+        pass
 
-    return paths
+    return None
 
 # ---------------- CREATE VIDEO ----------------
-def create_video(title, image_paths):
-    if not image_paths:
-        print("No images found at all.")
+def create_video(title, image_path):
+    if not image_path:
+        print("No valid image.")
         return
 
     print("Creating video...")
 
-    valid_clips = []
-
-    for path in image_paths:
-        try:
-            clip = ImageClip(path).resize((1280, 720)).set_duration(3)
-            valid_clips.append(clip)
-        except:
-            print("Skipped bad image:", path)
-
-    if len(valid_clips) == 0:
-        print("No valid clips.")
-        return
-
-    # convert to frames
-    frames = [clip.get_frame(0) for clip in valid_clips]
-
-    video = ImageSequenceClip(frames, fps=1)
+    clip = ImageClip(image_path).resize((1280, 720)).set_duration(5)
 
     os.makedirs("output", exist_ok=True)
-    video.write_videofile("output/news_video.mp4", fps=24)
+
+    clip.write_videofile("output/news_video.mp4", fps=24)
 
 # ---------------- MAIN ----------------
 def main():
@@ -88,10 +68,9 @@ def main():
     for n in news:
         print("Processing:", n["title"])
 
-        images = get_images(n["link"])
-        paths = download(images)
+        img_path = download_image(n["image"])
 
-        create_video(n["title"], paths)
+        create_video(n["title"], img_path)
 
 if __name__ == "__main__":
     main()
